@@ -155,6 +155,31 @@ by URL until `git fetch` refreshes the tracking ref. `add_repo` with
 `access: "push"` for `claim-graph` needs the operator to approve it and
 has not been.
 
+### The Anthropic key must be scoped to a workspace
+
+An organization-level key is not enough. It authenticates, then every
+request fails with `400 invalid_request_error: This API key is not scoped
+to a workspace, so this request must include the anthropic-workspace-id
+header`. Nothing in this project sends that header and nothing should
+start: create the key inside a workspace in the console instead.
+
+The failure that precedes it looks different and is worth recognising —
+`401 authentication_error: API key is invalid` — and it is what killed
+extraction for three weeks (see the README's daily-loop section). Test a
+key without touching the database or the corpus:
+
+```
+uv run python -c "
+from fragrance_graph.extract.llm import build_client, MODEL
+c = build_client()
+print(c.messages.create(model=MODEL, max_tokens=4,
+      messages=[{'role':'user','content':'say ok'}]).content[0].text)"
+```
+
+The key lives in two places and both matter: the `FRAGRANCE_ANTHROPIC_API_KEY`
+repository secret drives the scheduled loop, and the environment variable
+of the same name drives anything run from a session here.
+
 ### What the five gates are for
 
 `scripts/checkpoint.sh` runs ruff, the suite, the provenance audit, the

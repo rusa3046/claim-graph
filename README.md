@@ -1107,7 +1107,21 @@ Two things it deliberately does not do:
   something failed. A fresh issue per run would train the reader to ignore
   it, which defeats the point.
 
-Cost is about $0.20 a run, inside the $1/day cap — which now holds, since
+  "Something failed" has to actually reach the report for that to be
+  worth anything, and for three runs it did not. The alarm greps the
+  rendered summary for a line beginning `Problems:`, which only
+  `RunReport.errors` writes. A failed extraction batch is caught inside
+  `extract` and logged, so one overloaded call costs a batch rather than
+  the run — correct, and it meant *every* batch failing was invisible too.
+  An invalid API key 401'd all twenty batches of the runs on 2026-09-07,
+  -09-10 and -09-14. Each collected its ~400 comments, wrote no claims,
+  spent nothing, reported success and published; the unextracted backlog
+  grew from 54 comments to 1,266 with nobody told. `_extract` now turns a
+  non-zero `failed_batches` into a reported problem, and
+  `TestEveryBatchFailingIsHeard` pins the whole chain against the alarm's
+  own regular expression rather than just the counter.
+
+Cost is about $0.20 a run, inside the $1.50/day cap — which now holds, since
 the ledger is committed and read from the repository root rather than the
 working directory.
 

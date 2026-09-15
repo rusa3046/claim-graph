@@ -78,13 +78,13 @@ HEADLINE: Your closest matches — I prioritized masculine first, then looked fo
     digest: no sweet evidence recorded for it; 5 people across 4 channels have described it. 5 people across 4 channels behind everything cited.
     coverage: Community evidence: moderate
 
-[4] WORTH_DISCOVERING  Byredo Black Saffron
+[4] WORTH_DISCOVERING  Acqua di Parma Colonia
     chips: sweet=matched  masculine=unknown
     digest: Declared profile isn't sweet-leaning.
     why:  Declared profile isn't sweet-leaning.
     coverage: Community insight: limited so far
 
-[5] WORTH_DISCOVERING  Byredo Rose of No Man's Land
+[5] WORTH_DISCOVERING  Amouage Honour Woman
     chips: sweet=matched  masculine=unknown
     digest: Declared profile isn't sweet-leaning.
     why:  Declared profile isn't sweet-leaning.
@@ -98,31 +98,31 @@ CASE regression-catalog-sentence-in-community-frame
 HEADLINE: Your closest matches — I prioritized sandalwood first.
   preserve: sandalwood
 
-[1] WORTH_DISCOVERING  Estée Lauder AERIN Fleur de Peony
+[1] WORTH_DISCOVERING  Chanel BLEU DE CHANEL L’EXCLUSIF
     chips: sandalwood=matched
     digest: Sandalwood is among the declared notes.
     why:  Sandalwood is among the declared notes.
     coverage: Community insight: limited so far
 
-[2] WORTH_DISCOVERING  Hermès Twilly d'Hermès
+[2] WORTH_DISCOVERING  Diptyque Bois Corsé
     chips: sandalwood=matched
     digest: Sandalwood is among the declared notes.
     why:  Sandalwood is among the declared notes.
     coverage: Community insight: limited so far
 
-[3] WORTH_DISCOVERING  Tom Ford Private Blend Oud Wood
+[3] WORTH_DISCOVERING  Estée Lauder AERIN Fleur de Peony
     chips: sandalwood=matched
     digest: Sandalwood is among the declared notes.
     why:  Sandalwood is among the declared notes.
     coverage: Community insight: limited so far
 
-[4] WORTH_DISCOVERING  Tom Ford Santal Blush
+[4] WORTH_DISCOVERING  Tom Ford Private Blend Oud Wood
     chips: sandalwood=matched
     digest: Sandalwood is among the declared notes.
     why:  Sandalwood is among the declared notes.
     coverage: Community insight: limited so far
 
-[5] WORTH_DISCOVERING  Versace Eros Pour Femme
+[5] WORTH_DISCOVERING  Diptyque Tam Dao
     chips: sandalwood=matched
     digest: Sandalwood is among the declared notes.
     why:  Sandalwood is among the declared notes.
@@ -356,7 +356,15 @@ HEADLINE: Your closest matches — I prioritized summer first, then looked for d
     why:  Wearers consistently confirm it for summer wear.
     coverage: Community evidence: moderate
 
-[2] STRONG_PROFILE_FIT  Chanel COCO MADEMOISELLE
+[2] STRONG_PROFILE_FIT  Acqua di Parma Colonia
+    chips: sweet=matched  vanilla=matched  summer=unknown
+    digest: Declared profile isn't sweet-leaning.
+    why:  Declared profile isn't sweet-leaning.
+    why:  Vanilla isn't among the declared notes.
+    why:  Declared profile leans citrus/fresh — a conservative catalog fit for summer wear.
+    coverage: Community insight: limited so far
+
+[3] STRONG_PROFILE_FIT  Chanel COCO MADEMOISELLE
     chips: sweet=matched  vanilla=matched  summer=unknown
     digest: Declared profile isn't sweet-leaning.
     why:  Declared profile isn't sweet-leaning.
@@ -364,7 +372,7 @@ HEADLINE: Your closest matches — I prioritized summer first, then looked for d
     why:  Declared profile leans citrus — a conservative catalog fit for summer wear.
     coverage: Community insight: limited so far
 
-[3] STRONG_PROFILE_FIT  Chanel N°5 L'EAU
+[4] STRONG_PROFILE_FIT  Chanel N°5 L'EAU
     chips: sweet=matched  vanilla=matched  summer=unknown
     digest: Declared profile isn't sweet-leaning.
     why:  Declared profile isn't sweet-leaning.
@@ -372,15 +380,7 @@ HEADLINE: Your closest matches — I prioritized summer first, then looked for d
     why:  Declared profile leans citrus/fresh — a conservative catalog fit for summer wear.
     coverage: Community insight: limited so far
 
-[4] STRONG_PROFILE_FIT  Chloé Atelier des Fleurs Magnolia Alba
-    chips: sweet=matched  vanilla=matched  summer=unknown
-    digest: Declared profile isn't sweet-leaning.
-    why:  Declared profile isn't sweet-leaning.
-    why:  Vanilla isn't among the declared notes.
-    why:  Declared profile leans citrus/fresh — a conservative catalog fit for summer wear.
-    coverage: Community insight: limited so far
-
-[5] STRONG_PROFILE_FIT  Clinique Happy Perfume Rollerball
+[5] STRONG_PROFILE_FIT  Chloé Atelier des Fleurs Magnolia Alba
     chips: sweet=matched  vanilla=matched  summer=unknown
     digest: Declared profile isn't sweet-leaning.
     why:  Declared profile isn't sweet-leaning.
@@ -398,19 +398,19 @@ HEADLINE: Not enough people have compared these directly; matches below share In
   anchors: Initio Parfums Privés Side Effect
   reduce: warm
 
-[1] WORTH_DISCOVERING  Penhaligon's Halfeti
-    chips: Initio Parfums Privés Side Effect=matched  warm=contradicted
-    digest: official notes share saffron and sandalwood with Initio Parfums Privés Side Effect.
-    why:  Matches your preference for official notes share saffron and sandalwood with Initio Parfums Privés Side Effect.
-    coverage: Community insight: limited so far
-
-[2] WORTH_DISCOVERING  Amouage Guidance
+[1] WORTH_DISCOVERING  Amouage Guidance
     chips: Initio Parfums Privés Side Effect=matched  warm=unknown
     digest: official notes share saffron and sandalwood with Initio Parfums Privés Side Effect.
     why:  Matches your preference for official notes share saffron and sandalwood with Initio Parfums Privés Side Effect.
     coverage: Community insight: limited so far
 
-[3] WORTH_DISCOVERING  Amouage Guidance 46
+[2] WORTH_DISCOVERING  Amouage Guidance 46
+    chips: Initio Parfums Privés Side Effect=matched  warm=unknown
+    digest: official notes share saffron and sandalwood with Initio Parfums Privés Side Effect.
+    why:  Matches your preference for official notes share saffron and sandalwood with Initio Parfums Privés Side Effect.
+    coverage: Community insight: limited so far
+
+[3] WORTH_DISCOVERING  Amouage Purpose 50
     chips: Initio Parfums Privés Side Effect=matched  warm=unknown
     digest: official notes share saffron and sandalwood with Initio Parfums Privés Side Effect.
     why:  Matches your preference for official notes share saffron and sandalwood with Initio Parfums Privés Side Effect.
@@ -422,8 +422,8 @@ HEADLINE: Not enough people have compared these directly; matches below share In
     why:  Matches your preference for official notes share saffron and sandalwood with Initio Parfums Privés Side Effect.
     coverage: Community insight: limited so far
 
-[5] WORTH_DISCOVERING  Amouage Purpose 50
-    chips: Initio Parfums Privés Side Effect=matched  warm=unknown
+[5] WORTH_DISCOVERING  Penhaligon's Halfeti
+    chips: Initio Parfums Privés Side Effect=matched  warm=contradicted
     digest: official notes share saffron and sandalwood with Initio Parfums Privés Side Effect.
     why:  Matches your preference for official notes share saffron and sandalwood with Initio Parfums Privés Side Effect.
     coverage: Community insight: limited so far
@@ -510,17 +510,17 @@ HEADLINE: Your closest matches — I prioritized fresh first.
     why:  Fresh-forward declared profile.
     coverage: Community insight: limited so far
 
-[3] WORTH_DISCOVERING  Byredo Animalique
+[3] WORTH_DISCOVERING  Acqua di Parma Colonia
     digest: Fresh-forward declared profile.
     why:  Fresh-forward declared profile.
     coverage: Community insight: limited so far
 
-[4] WORTH_DISCOVERING  Byredo Gypsy Water
+[4] WORTH_DISCOVERING  Amouage Outlands
     digest: Fresh-forward declared profile.
     why:  Fresh-forward declared profile.
     coverage: Community insight: limited so far
 
-[5] WORTH_DISCOVERING  Carolina Herrera Good Girl Blush
+[5] WORTH_DISCOVERING  Byredo Animalique
     digest: Fresh-forward declared profile.
     why:  Fresh-forward declared profile.
     coverage: Community insight: limited so far
@@ -554,19 +554,19 @@ HEADLINE: Your closest matches — I prioritized vanilla first, then looked for 
     why:  Wearers consistently describe it as vanilla.
     coverage: Community evidence: moderate
 
-[3] WORTH_DISCOVERING  Coach Gold
+[3] WORTH_DISCOVERING  Carolina Herrera Luckycharms Lucky Charm
     chips: oud=matched  vanilla=matched
     digest: Vanilla is among the declared notes.
     why:  Vanilla is among the declared notes.
     coverage: Community insight: limited so far
 
-[4] WORTH_DISCOVERING  Tom Ford Private Blend Tobacco Vanille
+[4] WORTH_DISCOVERING  Coach Gold
     chips: oud=matched  vanilla=matched
     digest: Vanilla is among the declared notes.
     why:  Vanilla is among the declared notes.
     coverage: Community insight: limited so far
 
-[5] WORTH_DISCOVERING  Valentino Donna Born in Roma Intense
+[5] WORTH_DISCOVERING  Tom Ford Private Blend Tobacco Vanille
     chips: oud=matched  vanilla=matched
     digest: Vanilla is among the declared notes.
     why:  Vanilla is among the declared notes.
@@ -589,28 +589,28 @@ HEADLINE: Your closest matches — I prioritized vanilla first, then looked for 
     why:  Oud isn't among the declared notes.
     coverage: Community evidence: moderate
 
-[2] STRONG_PROFILE_FIT  Coach Gold
+[2] STRONG_PROFILE_FIT  Carolina Herrera Luckycharms Lucky Charm
     chips: oud=matched  vanilla=matched
     digest: Oud isn't among the declared notes.
     why:  Oud isn't among the declared notes.
     why:  Vanilla is among the declared notes.
     coverage: Community insight: limited so far
 
-[3] STRONG_PROFILE_FIT  Tom Ford Private Blend Tobacco Vanille
+[3] STRONG_PROFILE_FIT  Coach Gold
     chips: oud=matched  vanilla=matched
     digest: Oud isn't among the declared notes.
     why:  Oud isn't among the declared notes.
     why:  Vanilla is among the declared notes.
     coverage: Community insight: limited so far
 
-[4] STRONG_PROFILE_FIT  Valentino Donna Born in Roma Intense
+[4] STRONG_PROFILE_FIT  Tom Ford Private Blend Tobacco Vanille
     chips: oud=matched  vanilla=matched
     digest: Oud isn't among the declared notes.
     why:  Oud isn't among the declared notes.
     why:  Vanilla is among the declared notes.
     coverage: Community insight: limited so far
 
-[5] STRONG_PROFILE_FIT  Yves Saint Laurent Black Opium Eau de Parfum Women's
+[5] STRONG_PROFILE_FIT  Estée Lauder AERIN Tuberose Gardenia
     chips: oud=matched  vanilla=matched
     digest: Oud isn't among the declared notes.
     why:  Oud isn't among the declared notes.

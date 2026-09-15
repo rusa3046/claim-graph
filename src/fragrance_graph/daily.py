@@ -565,7 +565,7 @@ def _collect(conn, queries, max_videos, ingest_limit, report: RunReport) -> None
 
 
 def _extract(conn, budget: Budget, limit: int, report: RunReport) -> None:
-    from fragrance_graph.extract.llm import build_client, extract
+    from fragrance_graph.extract.llm import CostTracker, build_client, extract
 
     try:
         client = build_client()
@@ -574,6 +574,9 @@ def _extract(conn, budget: Budget, limit: int, report: RunReport) -> None:
         return
 
     before = _claim_count(conn)
+    # Bound before the try: a `BudgetExhausted` stop never returns a
+    # tracker, and the batch-failure check below still has to read one.
+    cost = CostTracker()
     try:
         cost = extract(conn, client, limit=limit, on_spend=budget.guard("extract"))
         report.comments_extracted = cost.comments
@@ -582,6 +585,32 @@ def _extract(conn, budget: Budget, limit: int, report: RunReport) -> None:
         log.warning("%s", exc)
     except Exception as exc:
         report.errors.append(f"extraction failed: {exc}")
+
+    # A single failed batch is caught inside `extract` and logged, so that
+    # one overloaded call costs a batch rather than the run. That is right,
+    # and it also made *every* batch failing invisible: an invalid API key
+    # returned 401 on all twenty batches of three consecutive scheduled
+    # runs (2026-09-07, -09-10, -09-14). Each collected its ~400 comments,
+    # wrote no claims, spent nothing, reported success, and published. The
+    # backlog grew from 54 comments to 1,266 with nobody told.
+    #
+    # `errors` is the only thing that renders the "Problems:" heading, and
+    # that heading is the exact string the workflow's alarm greps for
+    # before opening an issue. A failure that never reaches this list is a
+    # failure nobody hears about, however loudly `extract` logged it.
+    if cost.failed_batches:
+        attempted = cost.failed_batches + cost.batches
+        if cost.batches:
+            report.errors.append(
+                f"{cost.failed_batches} of {attempted} extraction batches "
+                "failed; those comments stay pending and retry next run."
+            )
+        else:
+            report.errors.append(
+                f"All {attempted} extraction batches failed — no claims were "
+                "written. The cause is in the log above; an invalid API key "
+                "is the one that has actually happened."
+            )
     report.claims_written = _claim_count(conn) - before
 
 

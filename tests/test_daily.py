@@ -7,10 +7,13 @@ the rest of the run — are both here.
 """
 
 
+import re
+
 import pytest
 
 from fragrance_graph.budget import Budget
-from fragrance_graph.daily import RunReport, run
+from fragrance_graph.daily import RunReport, _extract, run
+from fragrance_graph.extract.llm import CostTracker
 
 
 class TestReportRendering:
@@ -104,6 +107,78 @@ class TestTheReportDoesNotLie:
         rendered = report.render()
         assert "$1.50 daily cap" in rendered
         assert "$1.00 daily cap" not in rendered
+
+
+class TestEveryBatchFailingIsHeard:
+    """Three scheduled runs (2026-09-07, -09-10, -09-14) collected 1,212
+    comments between them, wrote no claims, spent nothing, reported success
+    and published. The Anthropic key was invalid, every batch returned 401,
+    and `extract` caught each one per-batch and carried on — right on its
+    own, so one overloaded call costs a batch rather than the run, and
+    silent in aggregate because `cost.failed_batches` reached nothing that
+    speaks. The unextracted backlog grew from 54 comments to 1,266.
+
+    The workflow's "Ask for a decision" step greps the rendered report for
+    a line beginning "Problems:", and `RunReport.errors` is the only thing
+    that writes that heading. So these assert the whole chain, not just the
+    counter: a failed batch has to become an error, an error has to render
+    the heading, and the heading has to match the alarm's own pattern.
+    """
+
+    #: Byte-for-byte the test the workflow applies to run.log.
+    ALARM = re.compile(r"^Problems:", re.M)
+
+    def _extract_with(self, conn, tmp_path, monkeypatch, tracker):
+        from fragrance_graph.extract import llm
+
+        monkeypatch.setattr(llm, "build_client", lambda: object())
+        monkeypatch.setattr(llm, "extract", lambda *a, **k: tracker)
+        report = RunReport()
+        _extract(
+            conn,
+            Budget(cap_usd=1.50, ledger=tmp_path / "spend.jsonl", spent_usd=0.0),
+            400,
+            report,
+        )
+        return report
+
+    def test_all_batches_failing_raises_the_alarm(self, conn, tmp_path, monkeypatch):
+        """The exact shape of the three lost runs: nothing succeeded."""
+        report = self._extract_with(
+            conn, tmp_path, monkeypatch,
+            CostTracker(comments=0, batches=0, failed_batches=20),
+        )
+        assert report.errors, "every batch failed and the report said nothing"
+        rendered = report.render()
+        assert self.ALARM.search(rendered), (
+            "the workflow greps for a line starting 'Problems:'; without it "
+            "no issue is opened and the run looks clean"
+        )
+        assert "All 20 extraction batches failed" in rendered
+
+    def test_some_batches_failing_is_reported_without_overstating(
+        self, conn, tmp_path, monkeypatch
+    ):
+        """A partial failure is still worth a person's attention, but it
+        must not claim nothing was written when 17 batches landed."""
+        report = self._extract_with(
+            conn, tmp_path, monkeypatch,
+            CostTracker(comments=340, batches=17, failed_batches=3),
+        )
+        rendered = report.render()
+        assert self.ALARM.search(rendered)
+        assert "3 of 20 extraction batches failed" in rendered
+        assert "no claims were written" not in rendered
+        assert report.comments_extracted == 340
+
+    def test_a_clean_run_stays_silent(self, conn, tmp_path, monkeypatch):
+        """The alarm is only worth anything if a good day never trips it."""
+        report = self._extract_with(
+            conn, tmp_path, monkeypatch,
+            CostTracker(comments=400, batches=20, failed_batches=0),
+        )
+        assert report.errors == []
+        assert not self.ALARM.search(report.render())
 
 
 class TestIngestBudget:

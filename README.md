@@ -113,20 +113,21 @@ still be recommended on its declared chemistry. Comparison *pages* still
 gate hard, by design: 23 of 120 resolved pairs clear the 3-commenter /
 2-creator bar.
 
-Corpus as of 2026-09-05 (see [data/corpus/PROVENANCE.md](./data/corpus/PROVENANCE.md)):
+Corpus as of 2026-09-15 (see [data/corpus/PROVENANCE.md](./data/corpus/PROVENANCE.md)):
 
 | | |
 |---|---|
-| Comments | 13,267 across 1,091 videos / 404 channels |
+| Comments | 14,479 across 1,178 videos / 425 channels |
 | Claims | 5,543 |
 | Extraction cost | $0.3656-$0.4410 per 1k comments, and it moves with the query |
 | Catalogue | 548 bottles; 146 with community evidence |
 | Retailer listings | 773 (Nordstrom); 475 resolve to a catalogue bottle |
 | Declared notes | 2,778 rows covering 411 of 548 bottles |
-| Labelled comments | 86 distinct comments labelled (165 label rows across labelers) |
-| Extractor score | `SIMILARITY EDGES` F1 **0.57** (P 0.60, R 0.55); OVERALL F1 0.40 — measured 2026-08-11 |
+| Labelled comments | 111 distinct comments labelled (215 label rows across labelers), 25 of them a blind calibration set |
+| Extractor score | `SIMILARITY EDGES` F1 **0.57** (P 0.60, R 0.55), OVERALL F1 0.40 against `aanya-verified` — measured 2026-08-11, reproduced 2026-09-15. Against `aanya` (48 train comments incl. the blind set): edges F1 0.78 (P 1.00, R 0.64), OVERALL 0.48 |
+| Drafter agreement | Human vs `opus5-draft` on 75 shared comments: F1 0.88 (P 0.81, R 0.96); every disagreement is the drafter over-reading, concentrated in OCCASION and BETTER_THAN — measured 2026-09-15 |
 | Denials caught | 35 of 38 flagged (92%), plus 32 the pattern missed |
-| Spent to date | $7.43 — under a $1.50/day cap enforced from a committed ledger |
+| Spent to date | $7.53 — under a $1.50/day cap enforced from a committed ledger |
 
 ### The edge funnel — where the graph actually is
 
@@ -883,6 +884,16 @@ Drafts import under their own labeler (`opus5-draft`), never a person's name.
 `eval_labels` is keyed on `(comment_id, labeler)`, so a draft can never
 overwrite or be mistaken for a human judgement, and `score --labeler` picks
 which one to trust.
+
+Run for real on 2026-09-15: 25 comments labelled by hand without sight of
+the drafts, then drafted with the same model and compared. Agreement on the
+75 comments both have covered is F1 0.88 (P 0.81, R 0.96), and every one of
+the disagreements is the drafter reading a claim into a comment the person
+did not — two `OCCASION` claims out of "goto gym scent this summer", a
+`BETTER_THAN` out of "smelled better on me" — never the reverse. So the
+drafts earn a place as the starting point for review, with the reviewer's
+attention on `OCCASION` and `BETTER_THAN`, and no place at all as an answer
+key. The number that would justify skipping review does not exist.
 
 `--pronoun-policy` is an explicit choice, not a default to ignore. Two of three
 comments sampled from the live corpus had a pronoun subject (*"It's not a super

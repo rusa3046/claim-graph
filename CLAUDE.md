@@ -180,6 +180,23 @@ The key lives in two places and both matter: the `FRAGRANCE_ANTHROPIC_API_KEY`
 repository secret drives the scheduled loop, and the environment variable
 of the same name drives anything run from a session here.
 
+### `corpus export` here reorders every file
+
+Run on this machine, the export rewrites all seven corpus files — a
+14,000-line diff — while `sorted(old) == sorted(new)` for six of them.
+The rows are identical; the text collation is not the CI runner's, and
+the committed files carry CI's order. Committing that churn means the
+next scheduled run flips it straight back. After an export, restore
+every file you did not mean to change and keep only the rows you added:
+
+```
+git checkout -- data/corpus/{claims,comments,fragrances,rejected_claims,video_discoveries,videos}.jsonl
+git diff --stat      # should be eval_labels.jsonl and spend.jsonl only
+```
+
+For `eval_labels.jsonl` build the committed file plus the new rows
+appended, rather than taking the re-sorted export as written.
+
 ### What the five gates are for
 
 `scripts/checkpoint.sh` runs ruff, the suite, the provenance audit, the
@@ -228,11 +245,24 @@ run as "1815 passed" — check which you got before trusting it.
 ### Open, in rough priority order
 
 1. **Deploy.** `Dockerfile`/`fly.toml` are written and the bake sequence
-   is verified natively, but no daemon existed in that session so the
-   image has never been built. First build is the risk.
-2. **The eval.** 86 labelled comments, and the published F1 predates the
-   corpus doubling. Target 200-500 stratified. A model must never write
-   its own answer key — see the blind-check discipline in the README.
+   is verified natively. The first real `docker build` ran on the owner's
+   laptop on 2026-09-15: eight steps in, the editable install failed on
+   `Readme file does not exist: README.md` — the package declares the
+   readme and the Dockerfile never copied it. Fixed the same day; the
+   build has not yet been seen to finish, so the bake step (the seven
+   rebuild commands inside the image, and the `retailer_listings`
+   assertion) is still the untested part.
+2. **The eval.** 111 labelled comments (215 rows across `aanya`,
+   `aanya-verified` and `opus5-draft`), 25 of them a blind calibration
+   set labelled 2026-09-15 without sight of the drafts. Human-vs-drafter
+   agreement on the 75 shared comments is F1 0.88, and every
+   disagreement is the drafter over-reading — OCCASION and BETTER_THAN
+   most — so drafts are a fair starting point for *review*, never an
+   answer key. Target 200-500 stratified. The 156 drafts from 2026-09-05
+   were lost with the container; `eval-batch/` is gitignored, so the
+   durable copy of anything labelled is `corpus export` -> commit, the
+   same day. A model must never write its own answer key — see the
+   blind-check discipline in the README.
 3. **First-party feedback** as a fourth provenance voice, silent until
    volume justifies speech, never blended into YouTube counts.
 4. **Nordstrom review text.** 2,192 reviews sit on 352 comment-less

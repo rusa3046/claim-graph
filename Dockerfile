@@ -52,6 +52,12 @@ RUN uv sync --extra api --frozen --no-install-project
 
 COPY src/ src/
 COPY data/ data/
+# The package declares `readme = "README.md"` in pyproject.toml, and
+# hatchling validates that the file exists when it builds the editable
+# install below. The first real `docker build` (2026-09-15) got this far
+# and stopped on exactly that: "Readme file does not exist". Without this
+# line the project half of the install cannot build at all.
+COPY README.md ./
 RUN uv sync --extra api --frozen
 
 # NOT /var/lib/postgresql/data. The base image declares that path a

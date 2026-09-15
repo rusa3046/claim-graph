@@ -245,8 +245,13 @@ run as "1815 passed" — check which you got before trusting it.
 ### Open, in rough priority order
 
 1. **Deploy.** `Dockerfile`/`fly.toml` are written and the bake sequence
-   is verified natively, but no daemon existed in that session so the
-   image has never been built. First build is the risk.
+   is verified natively. The first real `docker build` ran on the owner's
+   laptop on 2026-09-15: eight steps in, the editable install failed on
+   `Readme file does not exist: README.md` — the package declares the
+   readme and the Dockerfile never copied it. Fixed the same day; the
+   build has not yet been seen to finish, so the bake step (the seven
+   rebuild commands inside the image, and the `retailer_listings`
+   assertion) is still the untested part.
 2. **The eval.** 111 labelled comments (215 rows across `aanya`,
    `aanya-verified` and `opus5-draft`), 25 of them a blind calibration
    set labelled 2026-09-15 without sight of the drafts. Human-vs-drafter

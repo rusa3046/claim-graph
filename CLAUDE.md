@@ -252,13 +252,19 @@ run as "1815 passed" — check which you got before trusting it.
    build has not yet been seen to finish, so the bake step (the seven
    rebuild commands inside the image, and the `retailer_listings`
    assertion) is still the untested part.
-2. **The eval.** 111 labelled comments (215 rows across `aanya`,
-   `aanya-verified` and `opus5-draft`), 25 of them a blind calibration
-   set labelled 2026-09-15 without sight of the drafts. Human-vs-drafter
+2. **The eval.** 150 labelled comments (254 rows across `aanya`,
+   `aanya-verified` and `opus5-draft`): 25 a blind calibration set
+   labelled 2026-09-15 without sight of the drafts, 44 the `silent`
+   stratum labelled the same day (one claim found in 44, which is the
+   shape a healthy extractor's misses should have). Human-vs-drafter
    agreement on the 75 shared comments is F1 0.88, and every
    disagreement is the drafter over-reading — OCCASION and BETTER_THAN
    most — so drafts are a fair starting point for *review*, never an
-   answer key. Target 200-500 stratified. The 156 drafts from 2026-09-05
+   answer key. One comment (`UgxDLAjoz2rlu-O0cft4AaABAg`, the "Dior
+   Sauvage Parfum clone" request) was labelled with three claims in
+   August and none in September by the same person; the September
+   reading is what is committed and the owner has been asked which
+   stands. Target 200-500 stratified. The 156 drafts from 2026-09-05
    were lost with the container; `eval-batch/` is gitignored, so the
    durable copy of anything labelled is `corpus export` -> commit, the
    same day. A model must never write its own answer key — see the

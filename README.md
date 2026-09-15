@@ -123,8 +123,8 @@ Corpus as of 2026-09-15 (see [data/corpus/PROVENANCE.md](./data/corpus/PROVENANC
 | Catalogue | 548 bottles; 146 with community evidence |
 | Retailer listings | 773 (Nordstrom); 475 resolve to a catalogue bottle |
 | Declared notes | 2,778 rows covering 411 of 548 bottles |
-| Labelled comments | 111 distinct comments labelled (215 label rows across labelers), 25 of them a blind calibration set |
-| Extractor score | `SIMILARITY EDGES` F1 **0.57** (P 0.60, R 0.55), OVERALL F1 0.40 against `aanya-verified` — measured 2026-08-11, reproduced 2026-09-15. Against `aanya` (48 train comments incl. the blind set): edges F1 0.78 (P 1.00, R 0.64), OVERALL 0.48 |
+| Labelled comments | 150 distinct comments labelled (254 label rows across labelers): 25 a blind calibration set, 44 the `silent` stratum (comments the extractor found nothing in) |
+| Extractor score | `SIMILARITY EDGES` F1 **0.57** (P 0.60, R 0.55), OVERALL F1 0.40 against `aanya-verified` — measured 2026-08-11, reproduced 2026-09-15. Against `aanya` (71 train comments incl. the blind and silent sets): edges F1 0.78 (P 1.00, R 0.64), OVERALL 0.48 |
 | Drafter agreement | Human vs `opus5-draft` on 75 shared comments: F1 0.88 (P 0.81, R 0.96); every disagreement is the drafter over-reading, concentrated in OCCASION and BETTER_THAN — measured 2026-09-15 |
 | Denials caught | 35 of 38 flagged (92%), plus 32 the pattern missed |
 | Spent to date | $7.53 — under a $1.50/day cap enforced from a committed ledger |

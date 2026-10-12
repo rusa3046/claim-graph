@@ -704,6 +704,30 @@ uv run python -m fragrance_graph.pages build --out site/ \
   or escaped, unlike comment text, so paste only what the provider gave
   you.
 
+- **Structured data and descriptions**, on every page, added 2026-10-11
+  for answer engines as much as for people. Each page carries a
+  `<meta name="description">` and one `schema.org` JSON-LD block: a
+  comparison page is a `WebPage` *about* two `Product`s, a bottle page
+  has the `Product` as its `mainEntity`, the index is the `WebSite`. The
+  description is always a sentence the page already renders — the
+  verdict on a comparison page, the first card's digest on an ask or
+  bottle page (the engine's note only when there is no card to digest),
+  the site blurb on the index — trimmed at a word, never copy written
+  for the tag; the `Product` carries the brand when the catalogue
+  records one and nothing it does not. Deliberately absent:
+  `aggregateRating`, `review` and `offers`. Nobody here rated anything
+  out of five, a YouTube comment is quoted as a comment rather than
+  re-labelled a review, and the retailer prices were collected once and
+  are not kept current. Product rich results reward all three, which is
+  exactly why `test_no_page_invents_a_rating_a_review_or_a_price` refuses
+  them: structured data that says more than the page is the fabrication
+  these pages refuse everywhere else, in a format nobody reads. A
+  fragrance name containing `</script>` cannot close the block: `<`, `>`
+  and `&` are written as JSON unicode escapes, which a JSON reader
+  decodes and an HTML parser never sees as a tag. And with no
+  `--base-url` the block carries no `url`, by the same rule as the
+  canonical tag.
+
 `robots.txt` is always written and always allows everything; it names the
 sitemap when there is one.
 

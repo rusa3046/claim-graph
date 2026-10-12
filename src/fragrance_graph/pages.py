@@ -490,8 +490,18 @@ def _head(
     *,
     canonical: str = "",
     analytics: str = "",
+    description: str = "",
+    json_ld: dict | None = None,
 ) -> list[str]:
-    """The <head> every page shares."""
+    """The <head> every page shares.
+
+    `description` becomes the `<meta name="description">` a search engine
+    or an answer engine shows under the title; it is always a sentence the
+    page itself already says (a verdict, a digest, the index blurb),
+    trimmed by `meta_description`, never new copy. `json_ld` is the
+    schema.org block for the same page — see `product_ld`/`web_page_ld`
+    for what goes in and, more to the point, what is left out.
+    """
     out = [
         "<!doctype html>",
         '<html lang="en">',
@@ -500,12 +510,151 @@ def _head(
         '<meta name="viewport" content="width=device-width, initial-scale=1">',
         f"<title>{html.escape(title)}</title>",
     ]
+    if description:
+        out.append(
+            '<meta name="description" '
+            f'content="{html.escape(meta_description(description))}">'
+        )
     if canonical:
         out.append(f'<link rel="canonical" href="{html.escape(canonical)}">')
+    if json_ld:
+        out.append(json_ld_script(json_ld))
     if analytics:
         out.append(analytics)
     out.append("</head>")
     return out
+
+
+#: Search engines truncate a description around here; what survives the
+#: cut should still be a sentence, so the trim happens at a word.
+META_DESCRIPTION_LIMIT = 160
+
+SCHEMA_CONTEXT = "https://schema.org"
+
+#: The site, as structured data names it. The index page's own <h1>.
+SITE_NAME = "Fragrance comparisons"
+SITE_DESCRIPTION = (
+    "Do people think these two fragrances smell alike? Answered from "
+    "comments under fragrance videos on YouTube: every count is distinct "
+    "people, every quote links to its comment, and nothing is a review."
+)
+
+
+def meta_description(text: str, limit: int = META_DESCRIPTION_LIMIT) -> str:
+    """One line of plain text, whitespace collapsed, cut at a word when it
+    runs past `limit`. The ellipsis is one character so the cut never
+    pushes the result back over the limit."""
+    flat = " ".join(text.split())
+    if len(flat) <= limit:
+        return flat
+    cut = flat[: limit - 1]
+    if " " in cut:
+        cut = cut[: cut.rfind(" ")]
+    return cut.rstrip(" ,;:—-") + "…"
+
+
+def json_ld_script(data: dict) -> str:
+    """A `<script type="application/ld+json">` block the browser never
+    executes and a search engine reads.
+
+    `<`, `>` and `&` are written as JSON unicode escapes (`\\u003c` and
+    so on) inside the block. A JSON reader decodes them back to the
+    characters; an HTML parser never sees a tag. The one field here that
+    someone other than us wrote is a fragrance name, and a name of
+    `</script><script>…` would otherwise close this block early and run —
+    the same reason every other interpolated value on these pages goes
+    through `html.escape`, applied in the encoding this context actually
+    has. (HTML entities would be wrong here: `&lt;` inside JSON is five
+    literal characters, and a search engine would index a product called
+    `Aventus &lt;b&gt;`.)
+    """
+    text = json.dumps(data, ensure_ascii=False, sort_keys=True)
+    text = text.replace("&", "\\u0026").replace("<", "\\u003c").replace(">", "\\u003e")
+    return f'<script type="application/ld+json">{text}</script>'
+
+
+def product_ld(bottle: Bottle, *, url: str = "", description: str = "") -> dict:
+    """A schema.org `Product` for one bottle — name, brand when the
+    catalogue records one, a description when the page has one.
+
+    What is deliberately absent, because the corpus does not hold it and
+    the pages do not claim it: no `aggregateRating` or `ratingValue` (no
+    one here rated anything out of five), no `review` objects (a YouTube
+    comment is quoted as a comment, with its count, not re-labelled a
+    review), no `offers` (the retailer prices in `retailer_variants` were
+    collected once and are not kept current, and a stale price in
+    structured data is a wrong price in a search result). Structured data
+    that says more than the page is the same fabrication the pages refuse
+    everywhere else, in a format a person never reads.
+    """
+    out: dict = {"@type": "Product", "name": bottle.name}
+    if bottle.brand:
+        out["brand"] = {"@type": "Brand", "name": bottle.brand}
+    if description:
+        out["description"] = meta_description(description)
+    if url:
+        out["url"] = url
+    return out
+
+
+def web_page_ld(
+    name: str,
+    *,
+    url: str = "",
+    description: str = "",
+    about: list[dict] | None = None,
+    main_entity: dict | None = None,
+) -> dict:
+    """A schema.org `WebPage` whose `about`/`mainEntity` are the
+    `Product`s the page discusses. `url` is omitted when the build has no
+    base URL — the same rule as the canonical tag: a guessed domain is
+    worse than none."""
+    out: dict = {"@context": SCHEMA_CONTEXT, "@type": "WebPage", "name": name}
+    if description:
+        out["description"] = meta_description(description)
+    if url:
+        out["url"] = url
+        out["isPartOf"] = {"@type": "WebSite", "name": SITE_NAME}
+    if about:
+        out["about"] = about
+    if main_entity:
+        out["mainEntity"] = main_entity
+    return out
+
+
+def web_site_ld(base: str = "") -> dict:
+    out: dict = {
+        "@context": SCHEMA_CONTEXT,
+        "@type": "WebSite",
+        "name": SITE_NAME,
+        "description": SITE_DESCRIPTION,
+    }
+    if base:
+        out["url"] = base
+    return out
+
+
+def answer_summary(answer) -> str:
+    """The one sentence an ask or profile page is summarised by: the
+    first card's digest — what people actually say — and only when there
+    is no card, or the card has nothing to digest, the engine's note.
+
+    The order matters and was got wrong first. The note led, and the
+    first real build summarised a bottle's page as "Nothing in the corpus
+    is contested about Afnan N.O.I." and an ask page as "No match below
+    clears the independence bar". Both are true sentences the body also
+    shows, and both describe the system's confidence rather than the
+    content — which is the one thing a search result's description must
+    not do. Nothing here is written for the tag: `digest` and `note` are
+    both already on the page.
+    """
+    from fragrance_graph.recommend import digest
+
+    for candidate in answer.results:
+        summary = digest(candidate)
+        if summary:
+            return summary
+    return answer.note or ""
 
 
 def render_sitemap(base: str, slugs: list[str]) -> str:
@@ -1008,25 +1157,36 @@ def render_pair(
     """
     e = html.escape
     blocklist = load_blocklist() if blocklist is None else blocklist
+    # Who makes each one, and when it came out. Omitted from the body
+    # entirely when we know neither, rather than printing a bottle's own
+    # name back at it; the structured data carries the brand whenever
+    # the catalogue has one.
+    known = [(facts or {}).get(n, Bottle(n)) for n in (pair.left, pair.right)]
+    canonical = f"{base}{pair.slug}.html" if base else ""
+    summary = verdict(pair)
     out: list[str] = [
         *_head(
             pair.title,
-            canonical=f"{base}{pair.slug}.html" if base else "",
+            canonical=canonical,
             analytics=analytics,
+            description=summary,
+            json_ld=web_page_ld(
+                pair.title,
+                url=canonical,
+                description=summary,
+                about=[product_ld(b) for b in known],
+            ),
         ),
         "<body>",
         f"<h1>{e(pair.title)}</h1>",
         # The answer first, then how it was counted. A reader who stops
         # after one line should still have left with something true.
-        f"<p>{e(verdict(pair))}</p>",
+        f"<p>{e(summary)}</p>",
         f"<p>In total, {e(_people(pair.commenters))} connected these two "
         f"fragrances, across {e(_sources(pair.sources))}. Every line below is "
         f"quoted from a comment, and links back to it.</p>",
     ]
 
-    # Who makes each one, and when it came out. Omitted entirely when we
-    # know neither, rather than printing a bottle's own name back at it.
-    known = [(facts or {}).get(n, Bottle(n)) for n in (pair.left, pair.right)]
     if any(b.described != b.name for b in known):
         out.append(
             "<ul>"
@@ -1114,23 +1274,33 @@ def render_reverse(
 ) -> str:
     """One bottle, everything the community compares to it."""
     e = html.escape
-    described = (facts or {}).get(index.bottle, Bottle(index.bottle)).described
+    bottle = (facts or {}).get(index.bottle, Bottle(index.bottle))
+    canonical = f"{base}{index.slug}.html" if base else ""
+    # No total across the list. People appear in more than one
+    # comparison, so summing the pair counts would print a number of
+    # humans the corpus cannot support — the defect SPEC recorded when
+    # readers were adding up per-row counts themselves.
+    intro = (
+        f"{len(index.pairs)} comparisons involving {bottle.described}, each "
+        f"backed by at least {MIN_COMMENTERS} people writing across "
+        f"{MIN_SOURCES} creators. Each line links to the comments behind it."
+    )
     out: list[str] = [
         *_head(
             index.title,
-            canonical=f"{base}{index.slug}.html" if base else "",
+            canonical=canonical,
             analytics=analytics,
+            description=intro,
+            json_ld=web_page_ld(
+                index.title,
+                url=canonical,
+                description=intro,
+                about=[product_ld(bottle)],
+            ),
         ),
         "<body>",
         f"<h1>{e(index.title)}</h1>",
-        # No total across the list. People appear in more than one
-        # comparison, so summing the pair counts would print a number of
-        # humans the corpus cannot support — the defect SPEC recorded when
-        # readers were adding up per-row counts themselves.
-        f"<p>{len(index.pairs)} comparisons involving {e(described)}, each "
-        f"backed by at least {MIN_COMMENTERS} people writing across "
-        f"{MIN_SOURCES} creators. Each line links to the comments behind "
-        "it.</p>",
+        f"<p>{e(intro)}</p>",
         "<ul>",
     ]
     for pair, other, statement in index.rows:
@@ -1161,12 +1331,14 @@ def render_index(
     e = html.escape
     out = [
         *_head(
-            "Fragrance comparisons",
+            SITE_NAME,
             canonical=f"{base}index.html" if base else "",
             analytics=analytics,
+            description=SITE_DESCRIPTION,
+            json_ld=web_site_ld(base),
         ),
         "<body>",
-        "<h1>Fragrance comparisons</h1>",
+        f"<h1>{SITE_NAME}</h1>",
         WHAT_THIS_IS,
         f"<p>{len(pairs)} comparison"
         f"{'' if len(pairs) == 1 else 's'}, each backed by at least "
@@ -1674,19 +1846,44 @@ def build(
     from fragrance_graph import ask as _ask
     from fragrance_graph.recommend import recommend as _recommend
 
-    def _page_head(title: str, filename: str) -> list[str]:
+    # Profile pages name a bottle by its stored canonical name; `facts`
+    # is keyed by the display casing. Match on the lowercase name so the
+    # structured data finds the brand either way.
+    by_lower = {b.name.lower(): b for b in facts.values()}
+
+    def _page_head(
+        title: str, filename: str, *, description: str = "", json_ld: dict | None = None
+    ) -> list[str]:
         return _head(
             title,
             canonical=f"{base}{filename}" if base else "",
             analytics=analytics,
+            description=description,
+            json_ld=json_ld,
         )
+
+    _answer_summary = answer_summary
 
     asked = []
     for slug, question in _ask.QUESTIONS:
         filename = _ask.ask_slug(slug)
+        answer = _recommend(conn, question)
+        url = f"{base}{filename}" if base else ""
         page = _ask.render_answer(
-            question, _recommend(conn, question),
-            head=_page_head(f"{question} — fragrance graph", filename),
+            question, answer,
+            head=_page_head(
+                f"{question} — fragrance graph", filename,
+                description=_answer_summary(answer),
+                json_ld=web_page_ld(
+                    question,
+                    url=url,
+                    description=_answer_summary(answer),
+                    about=[
+                        product_ld(by_lower.get(c.name.lower(), Bottle(c.name)))
+                        for c in answer.results
+                    ],
+                ),
+            ),
         )
         (out_dir / filename).write_text(page, encoding="utf-8")
         slugs.append(filename)
@@ -1694,10 +1891,25 @@ def build(
 
     profiles = _ask.profile_pages(conn)
     for name, slug, answer in profiles:
+        url = f"{base}{slug}" if base else ""
+        summary = _answer_summary(answer)
         (out_dir / slug).write_text(
             _ask.render_profile(
                 name, answer,
-                head=_page_head(f"What people say about {name}", slug),
+                head=_page_head(
+                    f"What people say about {name}", slug,
+                    description=summary,
+                    json_ld=web_page_ld(
+                        f"What people say about {name}",
+                        url=url,
+                        description=summary,
+                        main_entity=product_ld(
+                            by_lower.get(name.lower(), Bottle(name)),
+                            url=url,
+                            description=summary,
+                        ),
+                    ),
+                ),
             ),
             encoding="utf-8",
         )

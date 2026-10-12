@@ -6,7 +6,9 @@ the gate is the feature, and every test below that asserts an empty result
 is asserting the product's central editorial rule rather than an edge case.
 """
 
+import html
 import json
+import re
 from dataclasses import replace
 
 import pytest
@@ -14,6 +16,7 @@ import pytest
 from fragrance_graph.ingest.store import SOURCE as INGEST_SOURCE
 from fragrance_graph.ingest.store import ingest
 from fragrance_graph.pages import (
+    META_DESCRIPTION_LIMIT,
     MIN_COMMENTERS,
     MIN_SOURCES,
     build,
@@ -1482,12 +1485,20 @@ class TestSiteWiring:
         inline, no third-party source — by design; see `TestTheQueryBox`.
         Every other page (pairs, profiles, asks) is still exactly what it
         was: text and links, nothing executable, and no *analytics*
-        snippet leaks in anywhere while `data/analytics.html` is off."""
+        snippet leaks in anywhere while `data/analytics.html` is off.
+
+        The one `<script` every page does carry is the schema.org block,
+        `type="application/ld+json"` — data a browser never executes.
+        So the rule is stated as what it always meant: no script that
+        runs. Every `<script` on a non-index page must be exactly that
+        inert type, and nothing else."""
+        inert = '<script type="application/ld+json">'
         out = self.built(conn, tmp_path, base_url="https://example.test/")
         for page in out.glob("*.html"):
             if page.name == "index.html":
                 continue
-            assert "<script" not in page.read_text(encoding="utf-8"), page.name
+            text = page.read_text(encoding="utf-8")
+            assert text.count("<script") == text.count(inert), page.name
 
     def test_a_snippet_reaches_the_head_of_every_page(self, conn, tmp_path):
         from fragrance_graph.pages import load_analytics, render_pair
@@ -1860,3 +1871,194 @@ class TestTheQueryBoxRoutesCorrectly:
     def test_an_unknown_query_routes_nowhere(self, routed):
         result = routed("this matches absolutely nothing at all")
         assert result["this matches absolutely nothing at all"] is None
+
+
+class TestStructuredData:
+    """A meta description and a schema.org block on every page, saying no
+    more than the page says.
+
+    The audience is an answer engine as much as a person: the description
+    is what shows under the title in a result, and the JSON-LD is how an
+    engine learns the page is *about* two named products rather than
+    merely mentioning them. Both are derived from text the page already
+    renders — a verdict, a digest, the site blurb — never written for the
+    tag. And both leave out what the corpus does not hold: no star
+    ratings, no `review` objects, no prices. A structured-data field that
+    says more than the page is the fabrication every other test here
+    refuses, in a format nobody reads.
+    """
+
+    LD = re.compile(
+        r'<script type="application/ld\+json">(.*?)</script>', re.S
+    )
+    META = re.compile(r'<meta name="description" content="([^"]*)">')
+
+    def built(self, conn, tmp_path, **kwargs):
+        pair_of(conn, people=MIN_COMMENTERS, videos=MIN_SOURCES)
+        build(conn, tmp_path, **kwargs)
+        return tmp_path
+
+    def _ld(self, text: str) -> dict:
+        blocks = self.LD.findall(text)
+        assert len(blocks) == 1, f"expected one JSON-LD block, found {len(blocks)}"
+        return json.loads(blocks[0])
+
+    def test_every_page_carries_one_description_and_one_schema_block(
+        self, conn, tmp_path
+    ):
+        out = self.built(conn, tmp_path, base_url="https://example.test/")
+        pages = list(out.glob("*.html"))
+        assert pages
+        for page in pages:
+            text = page.read_text(encoding="utf-8")
+            descriptions = self.META.findall(text)
+            assert len(descriptions) == 1, page.name
+            assert 0 < len(html.unescape(descriptions[0])) <= META_DESCRIPTION_LIMIT, page.name
+            data = self._ld(text)
+            assert data["@context"] == "https://schema.org", page.name
+            assert data["@type"] in {"WebPage", "WebSite"}, page.name
+
+    def test_a_comparison_page_is_about_both_products(self, conn, tmp_path):
+        out = self.built(conn, tmp_path, base_url="https://example.test/")
+        page = out / f"{slugify('Aventus')}-vs-{slugify('Club de Nuit Intense Man')}.html"
+        data = self._ld(page.read_text(encoding="utf-8"))
+        assert data["@type"] == "WebPage"
+        assert data["url"] == f"https://example.test/{page.name}"
+        names = sorted(p["name"] for p in data["about"])
+        assert names == ["Aventus", "Club de Nuit Intense Man"]
+        assert all(p["@type"] == "Product" for p in data["about"])
+
+    def test_the_description_is_a_sentence_the_page_already_says(
+        self, conn, tmp_path
+    ):
+        """The verdict line, not copy written for the tag."""
+        out = self.built(conn, tmp_path, base_url="https://example.test/")
+        page = out / f"{slugify('Aventus')}-vs-{slugify('Club de Nuit Intense Man')}.html"
+        text = page.read_text(encoding="utf-8")
+        description = html.unescape(self.META.search(text).group(1))
+        body = html.unescape(text.split("<body>", 1)[1])
+        assert description.rstrip("…") in body
+
+    def test_the_brand_reaches_the_product_when_the_catalogue_has_one(
+        self, conn, tmp_path
+    ):
+        pair_of(conn, people=MIN_COMMENTERS, videos=MIN_SOURCES)
+        conn.execute(
+            "UPDATE fragrances SET brand = 'Creed' WHERE canonical_name = 'Aventus'"
+        )
+        conn.commit()
+        build(conn, tmp_path, base_url="https://example.test/")
+        page = tmp_path / f"{slugify('Aventus')}-vs-{slugify('Club de Nuit Intense Man')}.html"
+        data = self._ld(page.read_text(encoding="utf-8"))
+        aventus = next(p for p in data["about"] if p["name"] == "Aventus")
+        assert aventus["brand"] == {"@type": "Brand", "name": "Creed"}
+
+    @pytest.mark.parametrize(
+        "field", ["aggregateRating", "ratingValue", "review", "offers", "price"]
+    )
+    def test_no_page_invents_a_rating_a_review_or_a_price(
+        self, conn, tmp_path, field
+    ):
+        """The corpus holds none of these. Product rich results reward
+        them, which is exactly why a test has to refuse them."""
+        out = self.built(conn, tmp_path, base_url="https://example.test/")
+        for page in out.glob("*.html"):
+            assert f'"{field}"' not in page.read_text(encoding="utf-8"), page.name
+
+    def test_no_base_url_means_no_url_in_the_structured_data(
+        self, conn, tmp_path
+    ):
+        """The canonical-tag rule, applied to JSON-LD: a guessed domain
+        is worse than none."""
+        out = self.built(conn, tmp_path)
+        for page in out.glob("*.html"):
+            data = self._ld(page.read_text(encoding="utf-8"))
+            assert "url" not in data, page.name
+            assert "url" not in json.dumps(data), page.name
+
+    def test_a_hostile_fragrance_name_cannot_close_the_script_block(self, conn):
+        """`</script>` inside the JSON would end the block early and the
+        rest would run. `<`, `>` and `&` are written as JSON unicode
+        escapes, which a JSON reader decodes and an HTML parser never
+        reads as a tag — and which, unlike HTML entities, do not change
+        the product name a search engine indexes."""
+        from fragrance_graph.pages import json_ld_script
+
+        name = '</script><script>alert(1)</script> & <b>co</b>'
+        block = json_ld_script({"name": name})
+        assert block.count("</script>") == 1
+        assert block.endswith("</script>")
+        assert "<b>" not in block and "&lt;" not in block
+        assert "\\u003c/script" in block
+        inner = block[len('<script type="application/ld+json">'):-len("</script>")]
+        assert json.loads(inner)["name"] == name
+
+
+class TestMetaDescription:
+    def test_short_text_passes_through_flattened(self):
+        from fragrance_graph.pages import meta_description
+
+        assert meta_description("  two\n words  ") == "two words"
+
+    def test_long_text_is_cut_at_a_word_and_stays_under_the_limit(self):
+        from fragrance_graph.pages import meta_description
+
+        text = "word " * 60
+        out = meta_description(text, limit=40)
+        assert len(out) <= 40
+        assert out.endswith("…")
+        assert not out[:-1].endswith(" ")
+        assert "wor…" not in out
+
+
+class TestAnswerSummary:
+    """What an ask or profile page is summarised by, and in which order.
+
+    The first real build led with the engine's note, and summarised a
+    bottle's page as "Nothing in the corpus is contested about Afnan
+    N.O.I." — a true sentence about the system's confidence, and no help
+    to anyone deciding whether to open the page. The card's digest is
+    the content; the note is the fallback.
+    """
+
+    def _card(self, name="X", with_reason=True):
+        from fragrance_graph.evidence import Strength
+        from fragrance_graph.recommend import Reason, Recommendation
+
+        reasons = (
+            [Reason(kind="prefer", text="raspberry", strength=Strength.OBSERVED,
+                    people=1, creators=1)]
+            if with_reason else []
+        )
+        return Recommendation(fragrance_id=1, name=name, reasons=reasons,
+                              people=1 if with_reason else 0,
+                              creators=1 if with_reason else 0)
+
+    def test_the_digest_leads_even_when_the_engine_has_a_note(self):
+        from fragrance_graph.pages import answer_summary
+        from tests.test_ask import answer_with
+
+        answer = answer_with(self._card(), note="Nothing in the corpus is contested.")
+        summary = answer_summary(answer)
+        assert "raspberry" in summary
+        assert "contested" not in summary
+
+    def test_the_note_is_the_fallback_when_there_is_no_card(self):
+        from fragrance_graph.pages import answer_summary
+        from tests.test_ask import answer_with
+
+        assert answer_summary(answer_with(note="Nobody has said anything.")) == \
+            "Nobody has said anything."
+
+    def test_a_card_with_nothing_to_digest_falls_through_to_the_note(self):
+        from fragrance_graph.pages import answer_summary
+        from tests.test_ask import answer_with
+
+        answer = answer_with(self._card(with_reason=False), note="the note")
+        assert answer_summary(answer) == "the note"
+
+    def test_nothing_at_all_is_an_empty_string_not_an_invented_line(self):
+        from fragrance_graph.pages import answer_summary
+        from tests.test_ask import answer_with
+
+        assert answer_summary(answer_with()) == ""
